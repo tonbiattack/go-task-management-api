@@ -29,6 +29,7 @@ CREATE TABLE `task` (
   `status` varchar(50) NOT NULL DEFAULT 'PENDING' COMMENT 'タスクの状態。デフォルトは「PENDING」(未完了)',
   `created_at` datetime DEFAULT current_timestamp() COMMENT 'タスクの作成日時',
   `updated_at` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp() COMMENT 'タスクの最終更新日時',
+  `deadline` datetime DEFAULT NULL COMMENT 'タスク期限日',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -42,4 +43,4 @@ CREATE TABLE `task` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2023-12-27 21:28:55
+-- Dump completed on 2023-12-28 17:14:35

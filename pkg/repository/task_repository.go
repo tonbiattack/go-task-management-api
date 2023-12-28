@@ -24,12 +24,12 @@ func (r *TaskRepository) CreateTask(task *model.Task) error {
 
 	if task.Status == "" {
 		// ステータスを省略
-		query = `INSERT INTO Task (id, title, description) VALUES (?, ?, ?)`
-		_, err = r.DB.Exec(query, task.ID, task.Title, task.Description)
+		query = `INSERT INTO Task (id, title, description, deadline) VALUES (?, ?, ?, ?)`
+		_, err = r.DB.Exec(query, task.ID, task.Title, task.Description, task.Deadline)
 	} else {
 		// ステータスを含める
-		query = `INSERT INTO Task (id, title, description, status) VALUES (?, ?, ?, ?)`
-		_, err = r.DB.Exec(query, task.ID, task.Title, task.Description, task.Status)
+		query = `INSERT INTO Task (id, title, description, status, deadline) VALUES (?, ?, ?, ?, ?)`
+		_, err = r.DB.Exec(query, task.ID, task.Title, task.Description, task.Status, task.Deadline)
 	}
 	return err
 }
@@ -38,8 +38,8 @@ func (r *TaskRepository) CreateTask(task *model.Task) error {
 // 指定されたIDのタスクが存在しない場合、エラーを返します。
 func (r *TaskRepository) GetTaskByID(id string) (*model.Task, error) {
 	var task model.Task
-	query := `SELECT id, title, description, status, created_at, updated_at FROM Task WHERE id = ?`
-	err := r.DB.QueryRow(query, id).Scan(&task.ID, &task.Title, &task.Description, &task.Status, &task.CreatedAt, &task.UpdatedAt)
+	query := `SELECT id, title, description, status, created_at, updated_at, deadline FROM Task WHERE id = ?`
+	err := r.DB.QueryRow(query, id).Scan(&task.ID, &task.Title, &task.Description, &task.Status, &task.CreatedAt, &task.UpdatedAt, &task.Deadline)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +50,7 @@ func (r *TaskRepository) GetTaskByID(id string) (*model.Task, error) {
 func (r *TaskRepository) GetAllTasks() ([]*model.Task, error) {
 	tasks := []*model.Task{}
 
-	query := `SELECT id, title, description, status, created_at, updated_at FROM Task`
+	query := `SELECT id, title, description, status, created_at, updated_at, deadline FROM Task`
 	rows, err := r.DB.Query(query)
 	if err != nil {
 		return nil, err
@@ -59,7 +59,7 @@ func (r *TaskRepository) GetAllTasks() ([]*model.Task, error) {
 
 	for rows.Next() {
 		var task model.Task
-		if err := rows.Scan(&task.ID, &task.Title, &task.Description, &task.Status, &task.CreatedAt, &task.UpdatedAt); err != nil {
+		if err := rows.Scan(&task.ID, &task.Title, &task.Description, &task.Status, &task.CreatedAt, &task.UpdatedAt, &task.Deadline); err != nil {
 			return nil, err
 		}
 		tasks = append(tasks, &task)
@@ -75,8 +75,8 @@ func (r *TaskRepository) GetAllTasks() ([]*model.Task, error) {
 // UpdateTask は指定されたIDのタスクを更新します。
 // タスクが存在しない場合、エラーを返します。
 func (r *TaskRepository) UpdateTask(task *model.Task) error {
-	query := `UPDATE Task SET title = ?, description = ?, status = ?, updated_at = NOW() WHERE id = ?`
-	res, err := r.DB.Exec(query, task.Title, task.Description, task.Status, task.ID)
+	query := `UPDATE Task SET title = ?, description = ?, status = ?, updated_at = NOW(), deadline = ? WHERE id = ?`
+	res, err := r.DB.Exec(query, task.Title, task.Description, task.Status, task.Deadline, task.ID)
 	if err != nil {
 		return err
 	}

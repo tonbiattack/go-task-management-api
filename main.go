@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/tonbiattack/go-task-management-api/pkg/config"
 	"github.com/tonbiattack/go-task-management-api/pkg/handler"
@@ -11,26 +12,25 @@ import (
 )
 
 func main() {
-	// データベース接続を取得
 	db := config.GetDB()
-
-	// リポジトリとハンドラーをセットアップ
 	taskRepo := repository.NewTaskRepository(db)
 	taskHandler := handler.NewTaskHandler(taskRepo)
-
-	// Gorilla Muxルーターを作成
 	router := mux.NewRouter()
 
-	// エンドポイントとハンドラーを紐付け
 	router.HandleFunc("/tasks", taskHandler.GetAllTasks).Methods("GET")
 	router.HandleFunc("/task", taskHandler.CreateTask).Methods("POST")
 	router.HandleFunc("/task/{id}", taskHandler.GetTask).Methods("GET")
 	router.HandleFunc("/task/{id}", taskHandler.UpdateTask).Methods("PUT")
-	router.HandleFunc("/task/{id}", taskHandler.DeleteTask).Methods("DELETE") // 特定のタスクを削除するエンドポイント
+	router.HandleFunc("/task/{id}", taskHandler.DeleteTask).Methods("DELETE")
 
-	// HTTPサーバーを8080ポートで起動
+	corsMiddleware := handlers.CORS(
+		handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type", "Authorization"}),
+		handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}),
+		handlers.AllowedOrigins([]string{"http://localhost:5173"}), // viteアプリのホスト
+	)
+
 	log.Println("Server is running on port 8080...")
-	if err := http.ListenAndServe(":8080", router); err != nil {
+	if err := http.ListenAndServe(":8080", corsMiddleware(router)); err != nil {
 		log.Fatal(err)
 	}
 }

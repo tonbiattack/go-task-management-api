@@ -1,36 +1,35 @@
 package main
 
 import (
-	"log"
-	"net/http"
-
-	"github.com/gorilla/handlers"
-	"github.com/gorilla/mux"
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
 	"github.com/tonbiattack/go-task-management-api/pkg/config"
 	"github.com/tonbiattack/go-task-management-api/pkg/handler"
 	"github.com/tonbiattack/go-task-management-api/pkg/repository"
 )
 
 func main() {
-	db := config.GetDB()
+	db := config.InitDB()
 	taskRepo := repository.NewTaskRepository(db)
 	taskHandler := handler.NewTaskHandler(taskRepo)
-	router := mux.NewRouter()
 
-	router.HandleFunc("/tasks", taskHandler.GetAllTasks).Methods("GET")
-	router.HandleFunc("/task", taskHandler.CreateTask).Methods("POST")
-	router.HandleFunc("/task/{id}", taskHandler.GetTask).Methods("GET")
-	router.HandleFunc("/task/{id}", taskHandler.UpdateTask).Methods("PUT")
-	router.HandleFunc("/task/{id}", taskHandler.DeleteTask).Methods("DELETE")
+	router := gin.Default()
 
-	corsMiddleware := handlers.CORS(
-		handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type", "Authorization"}),
-		handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}),
-		handlers.AllowedOrigins([]string{"http://localhost:5173"}), // viteアプリのホスト
-	)
+	// CORS設定
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:5173"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		AllowCredentials: true,
+	}))
 
-	log.Println("Server is running on port 8080...")
-	if err := http.ListenAndServe(":8080", corsMiddleware(router)); err != nil {
-		log.Fatal(err)
-	}
+	// ルートの設定
+	router.GET("/tasks", taskHandler.GetAllTasks)
+	router.POST("/task", taskHandler.CreateTask)
+	router.GET("/task/:id", taskHandler.GetTask)
+	router.PUT("/task/:id", taskHandler.UpdateTask)
+	router.DELETE("/task/:id", taskHandler.DeleteTask)
+
+	// サーバーの起動
+	router.Run(":8080")
 }

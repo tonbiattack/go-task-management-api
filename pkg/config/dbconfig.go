@@ -1,42 +1,42 @@
 package config
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
 
-	_ "github.com/go-sql-driver/mysql"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 )
 
-// DB はアプリケーション全体で使用されるグローバルなデータベース接続です。
-var DB *sql.DB
-
-func init() {
-	var err error
-
-	dbUser := "root"
-	dbPassword := ""
-	dbHost := "127.0.0.1"
-	dbPort := "3306"
-	dbName := "task_management"
-
-	// データソース名を作成します
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true", dbUser, dbPassword, dbHost, dbPort, dbName)
-
-	// データベース接続を開きます
-	DB, err = sql.Open("mysql", dsn)
-	if err != nil {
-		log.Fatalf("データベースを開く際のエラー: %v", err)
-	}
-
-	// データベース接続をチェックします
-	err = DB.Ping()
-	if err != nil {
-		log.Fatalf("データベースのping時のエラー: %v", err)
-	}
+// DBConfig はデータベース接続の設定情報を保持します
+type DBConfig struct {
+	Host     string
+	Port     string
+	User     string
+	Password string
+	Name     string
 }
 
-// GetDB はデータベース接続を返します
-func GetDB() *sql.DB {
-	return DB
+// InitDB は新しいデータベース接続を初期化して返します
+func InitDB() *gorm.DB {
+	config := DBConfig{
+		Host:     "127.0.0.1",
+		Port:     "3306",
+		User:     "root",
+		Password: "",
+		Name:     "task_management",
+	}
+
+	// DSN（Data Source Name）を作成
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+		config.User, config.Password, config.Host, config.Port, config.Name)
+
+	// GORMを使ってデータベースに接続
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	if err != nil {
+		log.Fatalf("データベース接続に失敗しました: %v", err)
+	}
+
+	// 接続を返す
+	return db
 }

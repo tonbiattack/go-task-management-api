@@ -11,7 +11,12 @@ import (
 func main() {
 	db := config.InitDB()
 	taskRepo := repository.NewTaskRepository(db)
+	workflowRepo := repository.NewWorkflowRepository(db)
+	workflowStatusRepo := repository.NewTaskWorkflowStatusRepository(db)
+	workflowStepRepo := repository.NewWorkflowStepRepository(db)
 	taskHandler := handler.NewTaskHandler(taskRepo)
+	// ハンドラーの初期化
+	workflowHandler := handler.NewWorkflowHandler(taskRepo, workflowRepo, workflowStatusRepo, workflowStepRepo)
 
 	router := gin.Default()
 
@@ -29,6 +34,10 @@ func main() {
 	router.GET("/task/:id", taskHandler.GetTask)
 	router.PUT("/task/:id", taskHandler.UpdateTask)
 	router.DELETE("/task/:id", taskHandler.DeleteTask)
+
+	router.POST("/workflows", workflowHandler.CreateWorkflow)
+	router.GET("/workflows/:id", workflowHandler.GetWorkflow)
+	router.PUT("/task/advance/:task_id", workflowHandler.AdvanceWorkflow)
 
 	// サーバーの起動
 	router.Run(":8080")

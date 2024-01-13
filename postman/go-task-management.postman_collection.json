@@ -1,0 +1,325 @@
+{
+	"info": {
+		"_postman_id": "952b7fff-55d3-4d4b-bcfa-3d4325b9e53b",
+		"name": "go-task-management",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "16222702"
+	},
+	"item": [
+		{
+			"name": "http://localhost:8080/task",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text",
+						"disabled": true
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"title\": \"ワークフロータスク\",\r\n    \"description\": \"これは新しいタスクの詳細説明です。\"\r\n    //  \"deadline\": \"2023-12-28T22:34:39+09:00\"\r\n}\r\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/task",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"task"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "http://localhost:8080/tasks",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text",
+						"disabled": true
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"title\": \"新しいタスク\",\r\n    \"description\": \"これは新しいタスクの詳細説明です。\"\r\n}\r\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/tasks",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"tasks"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "http://localhost:8080/task/ce0e5d99-8112-400d-aae3-95fbecdca36c",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text",
+						"disabled": true
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"title\": \"新しいタスク\",\r\n    \"description\": \"これは新しいタスクの詳細説明です。\"\r\n}\r\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/task/ce0e5d99-8112-400d-aae3-95fbecdca36c",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"task",
+						"ce0e5d99-8112-400d-aae3-95fbecdca36c"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "http://localhost:8080/task/ce0e5d99-8112-400d-aae3-95fbecdca36c",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text",
+						"disabled": true
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"title\": \"更新したタスク\",\r\n    \"description\": \"これは新しいタスクの詳細説明です。\"\r\n}\r\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/task/ce0e5d99-8112-400d-aae3-95fbecdca36c",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"task",
+						"ce0e5d99-8112-400d-aae3-95fbecdca36c"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "http://localhost:8080/task/0842d725-5048-46e9-b2a5-ecc7f6d2625e",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text",
+						"disabled": true
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"title\": \"新しいタスク\",\r\n    \"description\": \"これは新しいタスクの詳細説明です。\"\r\n}\r\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/task/0842d725-5048-46e9-b2a5-ecc7f6d2625e",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"task",
+						"0842d725-5048-46e9-b2a5-ecc7f6d2625e"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "http://localhost:8080/task/advance/83060a3a-8708-430c-8472-d370ef707a30",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text",
+						"disabled": true
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"name\": \"新しいワークフロー\",\r\n  \"description\": \"ワークフローの詳細説明\"\r\n}\r\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/task/advance/83060a3a-8708-430c-8472-d370ef707a30",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"task",
+						"advance",
+						"83060a3a-8708-430c-8472-d370ef707a30"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "http://localhost:8080/workflow/83060a3a-8708-430c-8472-d370ef707a30/start/7b7789e8-7806-4651-a77d-9e6d10c73353",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text",
+						"disabled": true
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/workflow/83060a3a-8708-430c-8472-d370ef707a30/start/7b7789e8-7806-4651-a77d-9e6d10c73353",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"workflow",
+						"83060a3a-8708-430c-8472-d370ef707a30",
+						"start",
+						"7b7789e8-7806-4651-a77d-9e6d10c73353"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "http://localhost:8080/workflow-steps",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text",
+						"disabled": true
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"workflow_id\": \"83060a3a-8708-430c-8472-d370ef707a30\",\r\n    \"name\": \"完了\",\r\n    \"order\": 4\r\n}\r\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/workflow-steps",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"workflow-steps"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "http://localhost:8080/task/advance/7b7789e8-7806-4651-a77d-9e6d10c73353",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/task/advance/7b7789e8-7806-4651-a77d-9e6d10c73353",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"task",
+						"advance",
+						"7b7789e8-7806-4651-a77d-9e6d10c73353"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

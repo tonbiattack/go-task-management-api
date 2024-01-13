@@ -30,3 +30,9 @@ func (r *TaskWorkflowStatusRepository) Update(taskWorkflowStatus *model.TaskWork
 func (r *TaskWorkflowStatusRepository) Delete(id string) error {
 	return r.db.Where("id = ?", id).Delete(&model.TaskWorkflowStatus{}).Error
 }
+
+func (r *TaskWorkflowStatusRepository) FindByTaskID(taskID string) (*model.TaskWorkflowStatus, error) {
+	var status model.TaskWorkflowStatus
+	err := r.db.Where("task_id = ?", taskID).First(&status).Error
+	return &status, err
+}

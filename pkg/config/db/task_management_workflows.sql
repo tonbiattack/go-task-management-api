@@ -29,7 +29,7 @@ CREATE TABLE `workflows` (
   `created_at` datetime DEFAULT current_timestamp() COMMENT '作成日時',
   `updated_at` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp() COMMENT '更新日時',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='ワークフローは一連のステップまたはプロセスを表し、これによりタスクの進行状況を管理します。';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -38,6 +38,7 @@ CREATE TABLE `workflows` (
 
 LOCK TABLES `workflows` WRITE;
 /*!40000 ALTER TABLE `workflows` DISABLE KEYS */;
+INSERT INTO `workflows` VALUES ('83060a3a-8708-430c-8472-d370ef707a30','新しいワークフロー','ワークフローの詳細説明','2024-01-12 20:55:56','2024-01-12 20:55:56');
 /*!40000 ALTER TABLE `workflows` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -50,4 +51,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2024-01-12 18:08:57
+-- Dump completed on 2024-01-13 15:21:07

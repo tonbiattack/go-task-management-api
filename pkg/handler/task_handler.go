@@ -18,6 +18,8 @@ func NewTaskHandler(repo *repository.TaskRepository) *TaskHandler {
 }
 
 // CreateTask - POST /tasks に対するハンドラー関数です。
+// CreateTask は新しいタスクを作成するためのエンドポイントです。
+// クライアントからのJSON形式のタスクデータを受け取り、データベースに保存します。
 func (h *TaskHandler) CreateTask(c *gin.Context) {
 	var task model.Task
 	if err := c.BindJSON(&task); err != nil {
@@ -42,6 +44,7 @@ func (h *TaskHandler) CreateTask(c *gin.Context) {
 }
 
 // GET /tasks に対するハンドラー関数です。
+// GetAllTasks はデータベース内のすべてのタスクを取得するためのエンドポイントです。
 func (h *TaskHandler) GetAllTasks(c *gin.Context) {
 	tasks, err := h.Repo.GetAllTasks()
 	if err != nil {
@@ -53,6 +56,8 @@ func (h *TaskHandler) GetAllTasks(c *gin.Context) {
 }
 
 // GetTask - GET /tasks/{id} に対するハンドラー関数です。
+// GetTask は特定のタスクIDに対応するタスクを取得するためのエンドポイントです。
+// タスクIDはURLパラメータから取得されます。
 func (h *TaskHandler) GetTask(c *gin.Context) {
 	taskID := c.Param("id")
 
@@ -66,6 +71,8 @@ func (h *TaskHandler) GetTask(c *gin.Context) {
 }
 
 // UpdateTask - PUT /tasks/{id} に対するハンドラー関数です。
+// UpdateTask は指定されたタスクIDに対応するタスクの内容を更新するためのエンドポイントです。
+// 更新されるタスクデータはクライアントからのJSON形式で提供されます。
 func (h *TaskHandler) UpdateTask(c *gin.Context) {
 	taskID := c.Param("id")
 
@@ -91,6 +98,7 @@ func (h *TaskHandler) UpdateTask(c *gin.Context) {
 }
 
 // DeleteTask - DELETE /tasks/{id} に対するハンドラー関数です。
+// DeleteTask は指定されたタスクIDに対応するタスクを削除するためのエンドポイントです。
 func (h *TaskHandler) DeleteTask(c *gin.Context) {
 	taskID := c.Param("id")
 

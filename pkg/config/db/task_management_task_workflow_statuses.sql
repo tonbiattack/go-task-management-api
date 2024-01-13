@@ -34,7 +34,7 @@ CREATE TABLE `task_workflow_statuses` (
   KEY `workflow_step_id` (`workflow_step_id`),
   CONSTRAINT `task_workflow_statuses_ibfk_1` FOREIGN KEY (`task_id`) REFERENCES `tasks` (`id`),
   CONSTRAINT `task_workflow_statuses_ibfk_2` FOREIGN KEY (`workflow_step_id`) REFERENCES `workflow_steps` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='タスクとワークフローステップとの関連を表し、タスクのワークフローにおける現在の状態を追跡します';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -43,6 +43,7 @@ CREATE TABLE `task_workflow_statuses` (
 
 LOCK TABLES `task_workflow_statuses` WRITE;
 /*!40000 ALTER TABLE `task_workflow_statuses` DISABLE KEYS */;
+INSERT INTO `task_workflow_statuses` VALUES ('5eb5c4ce-bdce-4838-95ac-b32cb48c45fb','7b7789e8-7806-4651-a77d-9e6d10c73353','57ecd3f0-addc-4df7-b537-199db062fe63','COMPLETED','2024-01-13 13:50:53','2024-01-13 15:10:18');
 /*!40000 ALTER TABLE `task_workflow_statuses` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -55,4 +56,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2024-01-12 18:08:57
+-- Dump completed on 2024-01-13 15:21:07

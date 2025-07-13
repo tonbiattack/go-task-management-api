@@ -1,0 +1,115 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch Go App (Local)",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/main.go",
+            "env": {
+                "DB_HOST": "localhost",
+                "DB_PORT": "3306",
+                "DB_USER": "root",
+                "DB_PASSWORD": "password",
+                "DB_NAME": "task_management",
+                "ENV": "development",
+                "GIN_MODE": "debug"
+            },
+            "console": "integratedTerminal",
+            "showLog": true,
+            "logOutput": "rpc"
+        },
+        {
+            "name": "Launch Go App (Docker DB)",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/main.go",
+            "env": {
+                "DB_HOST": "localhost",
+                "DB_PORT": "3307",
+                "DB_USER": "root",
+                "DB_PASSWORD": "password",
+                "DB_NAME": "task_management",
+                "ENV": "development",
+                "GIN_MODE": "debug"
+            },
+            "console": "integratedTerminal",
+            "showLog": true,
+            "logOutput": "rpc",
+            "preLaunchTask": "start-mysql-only"
+        },
+        {
+            "name": "Remote Debug Docker Container",
+            "type": "go",
+            "request": "attach",
+            "mode": "remote",
+            "remotePath": "/app",
+            "port": 2345,
+            "host": "localhost",
+            "showLog": true,
+            "logOutput": "rpc",
+            "substitutePath": [
+                {
+                    "from": "${workspaceFolder}",
+                    "to": "/app"
+                }
+            ],
+            "preLaunchTask": "start-debug-container"
+        },
+        {
+            "name": "Remote Debug (Manual Container)",
+            "type": "go",
+            "request": "attach",
+            "mode": "remote",
+            "remotePath": "/app",
+            "port": 2345,
+            "host": "localhost",
+            "showLog": true,
+            "logOutput": "rpc",
+            "substitutePath": [
+                {
+                    "from": "${workspaceFolder}",
+                    "to": "/app"
+                }
+            ]
+        },
+        {
+            "name": "Remote Debug + Hot Reload",
+            "type": "go",
+            "request": "attach",
+            "mode": "remote",
+            "remotePath": "/go/src/app",
+            "port": 2345,
+            "host": "localhost",
+            "showLog": true,
+            "logOutput": "rpc",
+            "substitutePath": [
+                {
+                    "from": "${workspaceFolder}",
+                    "to": "/go/src/app"
+                }
+            ],
+            "preLaunchTask": "start-hotreload-container"
+        },
+        {
+            "name": "Debug Tests",
+            "type": "go",
+            "request": "launch",
+            "mode": "test",
+            "program": "${workspaceFolder}",
+            "env": {
+                "DB_HOST": "localhost",
+                "DB_PORT": "3306",
+                "DB_USER": "root",
+                "DB_PASSWORD": "password",
+                "DB_NAME": "task_management_test",
+                "ENV": "test"
+            },
+            "args": [
+                "-test.v"
+            ]
+        }
+    ]
+}

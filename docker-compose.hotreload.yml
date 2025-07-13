@@ -1,0 +1,81 @@
+# VSCode + Docker + air + delve 統合環境
+version: '3.8'
+
+services:
+  # Go アプリケーション（ホットリロード + デバッグ）
+  app-hotreload:
+    build:
+      context: .
+      dockerfile: Dockerfile.hotreload
+    container_name: task-management-hotreload
+    ports:
+      - "8080:8080"  # アプリケーションポート
+      - "2345:2345"  # Delveデバッグポート
+    environment:
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=root
+      - DB_PASSWORD=password
+      - DB_NAME=task_management
+      - ENV=development
+      - GIN_MODE=debug
+      - CGO_ENABLED=0  # デバッグビルド用
+    volumes:
+      # ソースコードをマウント（ホットリロード用）
+      - .:/go/src/app:cached
+      # Go modulesキャッシュ
+      - go-modules:/go/pkg/mod
+      # Air一時ファイル
+      - ./tmp:/go/src/app/tmp
+    networks:
+      - hotreload-network
+    depends_on:
+      mysql:
+        condition: service_healthy
+    # デバッグに必要な権限
+    security_opt:
+      - "apparmor:unconfined"
+    cap_add:
+      - SYS_PTRACE
+    # 開発用なのでrestartは無効
+    restart: "no"
+    # 作業ディレクトリ
+    working_dir: /go/src/app
+    # ヘルスチェック（Delveサーバー確認）
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2345"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  # MySQL（開発用）
+  mysql:
+    image: mysql:8.0
+    container_name: task-management-mysql-hotreload
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: task_management
+      MYSQL_CHARSET: utf8mb4
+      MYSQL_COLLATION: utf8mb4_unicode_ci
+    volumes:
+      - mysql_hotreload_data:/var/lib/mysql
+      - ./pkg/config/db:/docker-entrypoint-initdb.d
+    networks:
+      - hotreload-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+      start_period: 30s
+    command: --default-authentication-plugin=mysql_native_password
+
+volumes:
+  mysql_hotreload_data:
+  go-modules:
+
+networks:
+  hotreload-network:
+    driver: bridge

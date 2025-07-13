@@ -1,0 +1,73 @@
+# リモートデバッグ用Docker Compose設定
+version: '3.8'
+
+services:
+  # Goアプリケーション（リモートデバッグ用）
+  app-debug:
+    build:
+      context: .
+      dockerfile: Dockerfile.debug
+    container_name: task-management-api-debug
+    ports:
+      - "8080:8080"  # アプリケーションポート
+      - "2345:2345"  # Delveリモートデバッグポート
+    environment:
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=root
+      - DB_PASSWORD=password
+      - DB_NAME=task_management
+      - ENV=development
+      - GIN_MODE=debug
+    volumes:
+      # ソースコードをマウント（変更の同期用）
+      - .:/workspace:cached
+    networks:
+      - debug-network
+    depends_on:
+      mysql:
+        condition: service_healthy
+    # デバッグに必要な権限設定
+    security_opt:
+      - "apparmor:unconfined"
+    cap_add:
+      - SYS_PTRACE
+    # コンテナの自動再起動を無効（デバッグ中の停止を防ぐため）
+    restart: "no"
+    # デバッグ用のヘルスチェック
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2345"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # MySQL（デバッグ用）
+  mysql:
+    image: mysql:8.0
+    container_name: task-management-mysql-debug
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: task_management
+      MYSQL_CHARSET: utf8mb4
+      MYSQL_COLLATION: utf8mb4_unicode_ci
+    volumes:
+      - mysql_debug_data:/var/lib/mysql
+      - ./pkg/config/db:/docker-entrypoint-initdb.d
+    networks:
+      - debug-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+      start_period: 30s
+    command: --default-authentication-plugin=mysql_native_password
+
+volumes:
+  mysql_debug_data:
+
+networks:
+  debug-network:
+    driver: bridge

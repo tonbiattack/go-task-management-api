@@ -1,0 +1,52 @@
+# リモートデバッグ用Dockerfile
+FROM golang:1.20-alpine AS builder
+
+WORKDIR /app
+
+# 必要なパッケージをインストール
+RUN apk add --no-cache git
+
+# デバッグツール（Delve）をインストール
+RUN go install github.com/go-delve/delve/cmd/dlv@latest
+
+# Go モジュールファイルをコピーしてダウンロード
+COPY go.mod go.sum ./
+RUN go mod download
+
+# ソースコードをコピー
+COPY . .
+
+# デバッグ情報付きでビルド（最適化無効、インライン無効）
+RUN CGO_ENABLED=0 go build -gcflags="all=-N -l" -o main .
+
+# デバッグ用実行ステージ
+FROM alpine:latest
+
+# 必要なパッケージをインストール（libc互換性のため）
+RUN apk --no-cache add ca-certificates libc6-compat
+
+# 非rootユーザー作成（セキュリティ向上）
+RUN addgroup -g 1001 -S appgroup && \
+    adduser -u 1001 -S appuser -G appgroup
+
+WORKDIR /app
+
+# Delveとアプリケーションをコピー
+COPY --from=builder /go/bin/dlv /usr/local/bin/dlv
+COPY --from=builder /app/main .
+
+# 権限設定
+RUN chown -R appuser:appgroup /app && \
+    chmod +x /usr/local/bin/dlv && \
+    chmod +x ./main
+
+# 非rootユーザーに切り替え
+USER appuser
+
+# デバッグポート公開
+EXPOSE 8080 2345
+
+# Delveでリモートデバッグサーバー起動
+# --continue: アプリケーションを自動で開始
+# --accept-multiclient: 複数のクライアントからの接続を許可
+CMD ["dlv", "--listen=:2345", "--headless=true", "--api-version=2", "--accept-multiclient", "--continue", "exec", "./main"]

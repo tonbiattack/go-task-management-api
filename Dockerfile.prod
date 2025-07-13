@@ -1,0 +1,62 @@
+# 本番環境用Dockerfile
+# マルチステージビルドでセキュリティとパフォーマンスを最適化
+
+# ビルドステージ
+FROM golang:1.20-alpine AS builder
+
+# 作業ディレクトリ設定
+WORKDIR /app
+
+# セキュリティ強化: CA証明書とgitを追加（依存関係検証用）
+RUN apk update && apk add --no-cache git ca-certificates
+
+# Go モジュールファイルをコピーして依存関係をダウンロード・検証
+COPY go.mod go.sum ./
+RUN go mod download && go mod verify
+
+# ソースコードをコピー
+COPY . .
+
+# 本番用ビルド設定
+# -ldflags="-w -s": デバッグ情報を削除してバイナリサイズを削減
+# -trimpath: ビルドパスを削除してセキュリティ向上
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+    -a -installsuffix cgo \
+    -ldflags="-w -s -X main.version=$(git describe --tags --always --dirty)" \
+    -trimpath \
+    -o main .
+
+# 本番用実行ステージ
+FROM alpine:latest
+
+# セキュリティアップデートとCA証明書、タイムゾーンデータを追加
+RUN apk update && \
+    apk upgrade && \
+    apk add --no-cache ca-certificates tzdata wget && \
+    update-ca-certificates && \
+    rm -rf /var/cache/apk/*
+
+# 非rootユーザー作成
+RUN addgroup -g 1001 -S appgroup && \
+    adduser -u 1001 -S appuser -G appgroup
+
+# 作業ディレクトリ設定
+WORKDIR /app
+
+# ビルドしたバイナリをコピーして権限設定
+COPY --from=builder /app/main .
+RUN chown appuser:appgroup /app/main && \
+    chmod +x /app/main
+
+# 非rootユーザーに切り替え
+USER appuser
+
+# ポート8080を公開
+EXPOSE 8080
+
+# ヘルスチェック設定
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
+
+# アプリケーション実行
+CMD ["./main"]

@@ -39,6 +39,9 @@ func main() {
 	// GetTask は、指定されたIDを持つ特定のタスクを取得するエンドポイントです。
 	router.GET("/task/:id", taskHandler.GetTask)
 
+	// GetTaskWorkflowDetail retrieves a task together with workflow step details.
+	router.GET("/task/:id/workflow-detail", taskHandler.GetTaskWorkflowDetail)
+
 	// UpdateTask は、指定されたIDのタスクを更新するエンドポイントです。
 	router.PUT("/task/:id", taskHandler.UpdateTask)
 

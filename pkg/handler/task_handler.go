@@ -1,12 +1,14 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/tonbiattack/go-task-management-api/pkg/model"
 	"github.com/tonbiattack/go-task-management-api/pkg/repository"
+	"gorm.io/gorm"
 )
 
 type TaskHandler struct {
@@ -108,4 +110,21 @@ func (h *TaskHandler) DeleteTask(c *gin.Context) {
 	}
 
 	c.Status(http.StatusNoContent)
+}
+
+// GetTaskWorkflowDetail - GET /task/{id}/workflow-detail retrieves a task with its workflow step information.
+func (h *TaskHandler) GetTaskWorkflowDetail(c *gin.Context) {
+	taskID := c.Param("id")
+
+	detail, err := h.Repo.GetTaskWorkflowDetail(taskID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Task workflow detail not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve task workflow detail"})
+		return
+	}
+
+	c.JSON(http.StatusOK, detail)
 }

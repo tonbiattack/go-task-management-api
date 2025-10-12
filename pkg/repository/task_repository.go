@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"strings"
+
 	"github.com/tonbiattack/go-task-management-api/pkg/model"
 	"gorm.io/gorm"
 )
@@ -43,4 +45,36 @@ func (r *TaskRepository) UpdateTask(task *model.Task) error {
 // タスクが存在しない場合、エラーを返します。
 func (r *TaskRepository) DeleteTask(id string) error {
 	return r.DB.Delete(&model.Task{}, id).Error
+}
+
+// GetTaskWorkflowDetail retrieves a task with the current workflow step information using joins.
+func (r *TaskRepository) GetTaskWorkflowDetail(id string) (*model.TaskWorkflowDetail, error) {
+	var detail model.TaskWorkflowDetail
+	columns := []string{
+		"tasks.id AS task_id",
+		"tasks.title AS task_title",
+		"tasks.description AS task_description",
+		"tasks.status AS task_status",
+		"tasks.created_at AS task_created_at",
+		"tasks.updated_at AS task_updated_at",
+		"tasks.deadline AS task_deadline",
+		"task_workflow_statuses.status AS workflow_status",
+		"workflow_steps.id AS workflow_step_id",
+		"workflow_steps.name AS workflow_step_name",
+		"workflow_steps.description AS workflow_step_description",
+		"workflow_steps.`order` AS workflow_step_order",
+		"workflows.id AS workflow_id",
+		"workflows.name AS workflow_name",
+	}
+	err := r.DB.Table("tasks").
+		Select(strings.Join(columns, ", ")).
+		Joins("JOIN task_workflow_statuses ON task_workflow_statuses.task_id = tasks.id").
+		Joins("JOIN workflow_steps ON workflow_steps.id = task_workflow_statuses.workflow_step_id").
+		Joins("JOIN workflows ON workflows.id = workflow_steps.workflow_id").
+		Where("tasks.id = ?", id).
+		Take(&detail).Error
+	if err != nil {
+		return nil, err
+	}
+	return &detail, nil
 }

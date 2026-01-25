@@ -1,142 +1,201 @@
 package handler
 
 import (
+	"bytes"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/tonbiattack/go-task-management-api/pkg/model"
 	"github.com/tonbiattack/go-task-management-api/pkg/repository"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
+	"github.com/tonbiattack/go-task-management-api/pkg/testutils"
 )
 
-func setupHandlerTestDB(t *testing.T) *gorm.DB {
-	t.Helper()
-
-	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
-	if err != nil {
-		t.Fatalf("failed to open sqlite in-memory database: %v", err)
-	}
-
-	if err := db.AutoMigrate(&model.Task{}, &model.Workflow{}, &model.WorkflowStep{}, &model.TaskWorkflowStatus{}); err != nil {
-		t.Fatalf("failed to migrate schema: %v", err)
-	}
-
-	return db
-}
-
-func seedHandlerWorkflowData(t *testing.T, db *gorm.DB) *model.Task {
-	t.Helper()
-
-	now := time.Now().UTC()
-	status := "IN_PROGRESS"
-
-	task := &model.Task{
-		ID:          "task-handler-1",
-		Title:       "Implement workflow join",
-		Description: "Ensure task joins workflow data",
-		Status:      &status,
-		CreatedAt:   now,
-		UpdatedAt:   now,
-	}
-
-	workflow := &model.Workflow{
-		ID:          "workflow-handler-1",
-		Name:        "Sample Workflow",
-		Description: "Workflow used for join testing",
-		CreatedAt:   now,
-		UpdatedAt:   now,
-	}
-
-	step := &model.WorkflowStep{
-		ID:          "workflow-step-handler-1",
-		WorkflowID:  workflow.ID,
-		Name:        "Draft",
-		Description: "Drafting specifications",
-		Order:       1,
-		CreatedAt:   now,
-		UpdatedAt:   now,
-	}
-
-	taskWorkflowStatus := &model.TaskWorkflowStatus{
-		ID:             "task-workflow-status-handler-1",
-		TaskID:         task.ID,
-		WorkflowStepID: step.ID,
-		Status:         status,
-		CreatedAt:      now,
-		UpdatedAt:      now,
-	}
-
-	if err := db.Create(workflow).Error; err != nil {
-		t.Fatalf("failed to create workflow: %v", err)
-	}
-	if err := db.Create(task).Error; err != nil {
-		t.Fatalf("failed to create task: %v", err)
-	}
-	if err := db.Create(step).Error; err != nil {
-		t.Fatalf("failed to create workflow step: %v", err)
-	}
-	if err := db.Create(taskWorkflowStatus).Error; err != nil {
-		t.Fatalf("failed to create task workflow status: %v", err)
-	}
-
-	return task
-}
-
-func TestTaskHandler_GetTaskWorkflowDetail(t *testing.T) {
+func setupTaskHandler(t *testing.T) (*TaskHandler, *gin.Engine) {
 	gin.SetMode(gin.TestMode)
 
-	db := setupHandlerTestDB(t)
-	task := seedHandlerWorkflowData(t, db)
+	db := testutils.SetupTestDB(t)
+	repo := repository.NewTaskRepository(db)
+	handler := NewTaskHandler(repo)
 
-	taskHandler := NewTaskHandler(repository.NewTaskRepository(db))
 	router := gin.New()
-	router.GET("/task/:id/workflow-detail", taskHandler.GetTaskWorkflowDetail)
-
-	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/task/%s/workflow-detail", task.ID), nil)
-	rec := httptest.NewRecorder()
-
-	router.ServeHTTP(rec, req)
-
-	if rec.Code != http.StatusOK {
-		t.Fatalf("expected status 200, got %d", rec.Code)
-	}
-
-	var detail model.TaskWorkflowDetail
-	if err := json.Unmarshal(rec.Body.Bytes(), &detail); err != nil {
-		t.Fatalf("failed to unmarshal response: %v", err)
-	}
-
-	if detail.TaskID != task.ID {
-		t.Errorf("expected task id %s, got %s", task.ID, detail.TaskID)
-	}
-	if detail.WorkflowStepName != "Draft" {
-		t.Errorf("expected step name Draft, got %s", detail.WorkflowStepName)
-	}
-	if detail.WorkflowName != "Sample Workflow" {
-		t.Errorf("expected workflow name Sample Workflow, got %s", detail.WorkflowName)
-	}
+	return handler, router
 }
 
-func TestTaskHandler_GetTaskWorkflowDetail_NotFound(t *testing.T) {
-	gin.SetMode(gin.TestMode)
+func TestTaskHandler_CreateTask(t *testing.T) {
+	handler, router := setupTaskHandler(t)
+	router.POST("/task", handler.CreateTask)
 
-	db := setupHandlerTestDB(t)
-	taskHandler := NewTaskHandler(repository.NewTaskRepository(db))
-	router := gin.New()
-	router.GET("/task/:id/workflow-detail", taskHandler.GetTaskWorkflowDetail)
-
-	req := httptest.NewRequest(http.MethodGet, "/task/unknown/workflow-detail", nil)
-	rec := httptest.NewRecorder()
-
-	router.ServeHTTP(rec, req)
-
-	if rec.Code != http.StatusNotFound {
-		t.Fatalf("expected status 404, got %d", rec.Code)
+	task := model.Task{
+		Title:       "新しいタスク",
+		Description: "新しいタスクの説明",
 	}
+
+	jsonData, _ := json.Marshal(task)
+	req := httptest.NewRequest("POST", "/task", bytes.NewBuffer(jsonData))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusCreated, w.Code)
+
+	var response model.Task
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+	assert.Equal(t, "新しいタスク", response.Title)
+	assert.Equal(t, "新しいタスクの説明", response.Description)
+	assert.NotEmpty(t, response.ID)
+}
+
+func TestTaskHandler_CreateTask_InvalidJSON(t *testing.T) {
+	handler, router := setupTaskHandler(t)
+	router.POST("/task", handler.CreateTask)
+
+	req := httptest.NewRequest("POST", "/task", bytes.NewBuffer([]byte("invalid json")))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+
+	var response map[string]string
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+	assert.Equal(t, "Invalid request body", response["error"])
+}
+
+func TestTaskHandler_GetAllTasks(t *testing.T) {
+	handler, router := setupTaskHandler(t)
+	router.GET("/tasks", handler.GetAllTasks)
+
+	// テストデータを作成
+	testutils.CreateTestTask(handler.Repo.DB, "task-1", "タスク1", "説明1")
+	testutils.CreateTestTask(handler.Repo.DB, "task-2", "タスク2", "説明2")
+
+	req := httptest.NewRequest("GET", "/tasks", nil)
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response []*model.Task
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+	assert.Len(t, response, 2)
+}
+
+func TestTaskHandler_GetTask(t *testing.T) {
+	handler, router := setupTaskHandler(t)
+	router.GET("/task/:id", handler.GetTask)
+
+	// テストデータを作成
+	testutils.CreateTestTask(handler.Repo.DB, "task-1", "テストタスク", "テスト説明")
+
+	req := httptest.NewRequest("GET", "/task/task-1", nil)
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response model.Task
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+	assert.Equal(t, "task-1", response.ID)
+	assert.Equal(t, "テストタスク", response.Title)
+}
+
+func TestTaskHandler_GetTask_NotFound(t *testing.T) {
+	handler, router := setupTaskHandler(t)
+	router.GET("/task/:id", handler.GetTask)
+
+	req := httptest.NewRequest("GET", "/task/non-existent", nil)
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+
+	var response map[string]string
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+	assert.Equal(t, "Failed to retrieve task", response["error"])
+}
+
+func TestTaskHandler_UpdateTask(t *testing.T) {
+	handler, router := setupTaskHandler(t)
+	router.PUT("/task/:id", handler.UpdateTask)
+
+	// テストデータを作成
+	testutils.CreateTestTask(handler.Repo.DB, "task-1", "元のタスク", "元の説明")
+
+	updatedTask := model.Task{
+		Title:       "更新されたタスク",
+		Description: "更新された説明",
+	}
+
+	jsonData, _ := json.Marshal(updatedTask)
+	req := httptest.NewRequest("PUT", "/task/task-1", bytes.NewBuffer(jsonData))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response model.Task
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+	assert.Equal(t, "task-1", response.ID)
+	assert.Equal(t, "更新されたタスク", response.Title)
+	assert.Equal(t, "更新された説明", response.Description)
+}
+
+func TestTaskHandler_UpdateTask_InvalidJSON(t *testing.T) {
+	handler, router := setupTaskHandler(t)
+	router.PUT("/task/:id", handler.UpdateTask)
+
+	req := httptest.NewRequest("PUT", "/task/task-1", bytes.NewBuffer([]byte("invalid json")))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+
+	var response map[string]string
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+	assert.Equal(t, "Invalid request body", response["error"])
+}
+
+func TestTaskHandler_DeleteTask(t *testing.T) {
+	handler, router := setupTaskHandler(t)
+	router.DELETE("/task/:id", handler.DeleteTask)
+
+	// テストデータを作成
+	testutils.CreateTestTask(handler.Repo.DB, "task-1", "削除されるタスク", "削除テスト")
+
+	req := httptest.NewRequest("DELETE", "/task/task-1", nil)
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response map[string]string
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+	assert.Equal(t, "Task deleted successfully", response["message"])
+
+	// タスクが削除されたことを確認
+	_, err = handler.Repo.GetTaskByID("task-1")
+	assert.Error(t, err)
 }

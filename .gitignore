@@ -21,3 +21,10 @@
 go.work
 
 tmp/*
+
+CLAUDE.md
+/docs
+.claude/
+.github/
+.vscode/
+

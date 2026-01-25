@@ -4,7 +4,10 @@
       "Bash(chmod:*)",
       "Bash(docker-compose:*)",
       "Bash(docker logs:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(go test:*)",
+      "Bash(go get:*)",
+      "Bash(CGO_ENABLED=1 go test ./... -v)"
     ],
     "deny": []
   }

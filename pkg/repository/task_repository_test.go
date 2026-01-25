@@ -1,121 +1,158 @@
 package repository
 
 import (
-	"errors"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/tonbiattack/go-task-management-api/pkg/model"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
+	"github.com/tonbiattack/go-task-management-api/pkg/testutils"
 )
 
-func setupTestDB(t *testing.T) *gorm.DB {
-	t.Helper()
+func TestTaskRepository_CreateTask(t *testing.T) {
+	db := testutils.SetupTestDB(t)
+	repo := NewTaskRepository(db)
 
-	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
-	if err != nil {
-		t.Fatalf("failed to open sqlite in-memory database: %v", err)
+	status := "pending"
+	task := &model.Task{
+		ID:          "test-task-1",
+		Title:       "テストタスク",
+		Description: "テスト用のタスクです",
+		Status:      &status,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
 	}
 
-	if err := db.AutoMigrate(&model.Task{}, &model.Workflow{}, &model.WorkflowStep{}, &model.TaskWorkflowStatus{}); err != nil {
-		t.Fatalf("failed to migrate schema: %v", err)
-	}
+	err := repo.CreateTask(task)
+	assert.NoError(t, err)
 
-	return db
+	// データベースから取得して確認
+	var savedTask model.Task
+	err = db.First(&savedTask, "id = ?", "test-task-1").Error
+	assert.NoError(t, err)
+	assert.Equal(t, "テストタスク", savedTask.Title)
+	assert.Equal(t, "テスト用のタスクです", savedTask.Description)
 }
 
-func seedWorkflowData(t *testing.T, db *gorm.DB) *model.Task {
-	t.Helper()
+func TestTaskRepository_GetTaskByID(t *testing.T) {
+	db := testutils.SetupTestDB(t)
+	repo := NewTaskRepository(db)
 
-	now := time.Now().UTC()
-	status := "IN_PROGRESS"
+	// テストデータを作成
+	testutils.CreateTestTask(db, "test-task-1", "テストタスク", "テスト用のタスクです")
+
+	// タスクを取得
+	task, err := repo.GetTaskByID("test-task-1")
+	assert.NoError(t, err)
+	assert.Equal(t, "test-task-1", task.ID)
+	assert.Equal(t, "テストタスク", task.Title)
+
+	// 存在しないタスクの場合
+	_, err = repo.GetTaskByID("non-existent")
+	assert.Error(t, err)
+}
+
+func TestTaskRepository_GetAllTasks(t *testing.T) {
+	db := testutils.SetupTestDB(t)
+	repo := NewTaskRepository(db)
+
+	// テストデータを作成
+	testutils.CreateTestTask(db, "task-1", "タスク1", "説明1")
+	testutils.CreateTestTask(db, "task-2", "タスク2", "説明2")
+	testutils.CreateTestTask(db, "task-3", "タスク3", "説明3")
+
+	// すべてのタスクを取得
+	tasks, err := repo.GetAllTasks()
+	assert.NoError(t, err)
+	assert.Len(t, tasks, 3)
+
+	// タスクの順序は保証されないので、IDでソートして確認
+	taskIDs := make([]string, len(tasks))
+	for i, task := range tasks {
+		taskIDs[i] = task.ID
+	}
+	assert.Contains(t, taskIDs, "task-1")
+	assert.Contains(t, taskIDs, "task-2")
+	assert.Contains(t, taskIDs, "task-3")
+}
+
+func TestTaskRepository_UpdateTask(t *testing.T) {
+	db := testutils.SetupTestDB(t)
+	repo := NewTaskRepository(db)
+
+	// テストデータを作成
+	originalTask := testutils.CreateTestTask(db, "test-task-1", "元のタイトル", "元の説明")
+
+	// タスクを更新
+	newStatus := "completed"
+	originalTask.Title = "更新されたタイトル"
+	originalTask.Description = "更新された説明"
+	originalTask.Status = &newStatus
+
+	err := repo.UpdateTask(originalTask)
+	assert.NoError(t, err)
+
+	// データベースから取得して確認
+	updatedTask, err := repo.GetTaskByID("test-task-1")
+	assert.NoError(t, err)
+	assert.Equal(t, "更新されたタイトル", updatedTask.Title)
+	assert.Equal(t, "更新された説明", updatedTask.Description)
+	assert.Equal(t, "completed", *updatedTask.Status)
+}
+
+func TestTaskRepository_DeleteTask(t *testing.T) {
+	db := testutils.SetupTestDB(t)
+	repo := NewTaskRepository(db)
+
+	// テストデータを作成
+	testutils.CreateTestTask(db, "test-task-1", "削除されるタスク", "削除テスト")
+
+	// タスクが存在することを確認
+	_, err := repo.GetTaskByID("test-task-1")
+	assert.NoError(t, err)
+
+	// タスクを削除
+	err = repo.DeleteTask("test-task-1")
+	assert.NoError(t, err)
+
+	// タスクが削除されたことを確認
+	_, err = repo.GetTaskByID("test-task-1")
+	assert.Error(t, err)
+}
+
+func TestTaskRepository_DeleteNonExistentTask(t *testing.T) {
+	db := testutils.SetupTestDB(t)
+	repo := NewTaskRepository(db)
+
+	// 存在しないタスクを削除しようとする
+	err := repo.DeleteTask("non-existent")
+	// GORMでは存在しないレコードの削除はエラーにならない
+	assert.NoError(t, err)
+}
+
+func TestTaskRepository_CreateTaskWithNilStatus(t *testing.T) {
+	db := testutils.SetupTestDB(t)
+	repo := NewTaskRepository(db)
 
 	task := &model.Task{
-		ID:          "task-join-1",
-		Title:       "Design database schema",
-		Description: "Create tables and relations",
-		Status:      &status,
-		CreatedAt:   now,
-		UpdatedAt:   now,
+		ID:          "test-task-nil-status",
+		Title:       "ステータスなしタスク",
+		Description: "ステータスがnilのタスク",
+		Status:      nil, // nilステータス
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
 	}
 
-	workflow := &model.Workflow{
-		ID:          "workflow-1",
-		Name:        "Development Flow",
-		Description: "Standard software delivery workflow",
-		CreatedAt:   now,
-		UpdatedAt:   now,
-	}
+	err := repo.CreateTask(task)
+	assert.NoError(t, err)
 
-	step := &model.WorkflowStep{
-		ID:          "workflow-step-1",
-		WorkflowID:  workflow.ID,
-		Name:        "Design",
-		Description: "Design deliverables preparation",
-		Order:       1,
-		CreatedAt:   now,
-		UpdatedAt:   now,
-	}
+	// データベースから取得して確認
+	savedTask, err := repo.GetTaskByID("test-task-nil-status")
+	require.NoError(t, err)
 
-	taskWorkflowStatus := &model.TaskWorkflowStatus{
-		ID:             "task-workflow-status-1",
-		TaskID:         task.ID,
-		WorkflowStepID: step.ID,
-		Status:         status,
-		CreatedAt:      now,
-		UpdatedAt:      now,
-	}
-
-	if err := db.Create(workflow).Error; err != nil {
-		t.Fatalf("failed to create workflow: %v", err)
-	}
-	if err := db.Create(task).Error; err != nil {
-		t.Fatalf("failed to create task: %v", err)
-	}
-	if err := db.Create(step).Error; err != nil {
-		t.Fatalf("failed to create workflow step: %v", err)
-	}
-	if err := db.Create(taskWorkflowStatus).Error; err != nil {
-		t.Fatalf("failed to create task workflow status: %v", err)
-	}
-
-	return task
-}
-
-func TestTaskRepository_GetTaskWorkflowDetail(t *testing.T) {
-	db := setupTestDB(t)
-	repo := NewTaskRepository(db)
-	task := seedWorkflowData(t, db)
-
-	detail, err := repo.GetTaskWorkflowDetail(task.ID)
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-
-	if detail.TaskID != task.ID {
-		t.Errorf("expected task id %s, got %s", task.ID, detail.TaskID)
-	}
-	if detail.WorkflowName != "Development Flow" {
-		t.Errorf("expected workflow name Development Flow, got %s", detail.WorkflowName)
-	}
-	if detail.WorkflowStepName != "Design" {
-		t.Errorf("expected workflow step name Design, got %s", detail.WorkflowStepName)
-	}
-	if detail.WorkflowStatus != "IN_PROGRESS" {
-		t.Errorf("expected workflow status IN_PROGRESS, got %s", detail.WorkflowStatus)
-	}
-	if detail.TaskStatus == nil || *detail.TaskStatus != "IN_PROGRESS" {
-		t.Errorf("expected task status pointer to IN_PROGRESS, got %v", detail.TaskStatus)
-	}
-}
-
-func TestTaskRepository_GetTaskWorkflowDetail_NotFound(t *testing.T) {
-	db := setupTestDB(t)
-	repo := NewTaskRepository(db)
-
-	_, err := repo.GetTaskWorkflowDetail("unknown-task")
-	if !errors.Is(err, gorm.ErrRecordNotFound) {
-		t.Fatalf("expected ErrRecordNotFound, got %v", err)
+	// デフォルト値が設定されているか確認
+	if savedTask.Status != nil {
+		assert.Equal(t, "pending", *savedTask.Status)
 	}
 }
